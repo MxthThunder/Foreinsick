@@ -1,7 +1,9 @@
-import { FileSearch, Download } from "lucide-react";
+import { FileSearch, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
 
 interface ResultsPanelProps {
   mode: "newCase" | "specific";
@@ -10,6 +12,7 @@ interface ResultsPanelProps {
 }
 
 export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProps) => {
+  const [selectedEvidence, setSelectedEvidence] = useState<number | null>(null);
   if (isAnalyzing) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -142,7 +145,9 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
                         {evidence.source} ↔ {evidence.target}
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm">View Context</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedEvidence(i)}>
+                      View Context
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -150,6 +155,40 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
           </div>
         </div>
       )}
+
+      <Dialog open={selectedEvidence !== null} onOpenChange={() => setSelectedEvidence(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Evidence Context</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <img
+                src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800"
+                alt="Evidence context 1"
+                className="w-full h-64 object-cover rounded-lg border"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1605379399642-870262d3d051?w=800"
+                alt="Evidence context 2"
+                className="w-full h-64 object-cover rounded-lg border"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+                alt="Evidence context 3"
+                className="w-full h-64 object-cover rounded-lg border"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800"
+                alt="Evidence context 4"
+                className="w-full h-64 object-cover rounded-lg border"
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
