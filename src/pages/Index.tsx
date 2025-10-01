@@ -49,7 +49,16 @@ const Index = () => {
                 AI-powered forensic data correlation system
               </p>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="text-right">
+                <p className="text-sm font-medium text-foreground">Officer ID: IO-2847</p>
+                <p className="text-xs text-muted-foreground">Last login: Today 09:23</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-semibold">JD</span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
