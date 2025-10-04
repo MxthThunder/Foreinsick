@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeSelector } from "@/components/ModeSelector";
 import { FileUploadZone } from "@/components/FileUploadZone";
@@ -8,8 +8,10 @@ import { CaseSelector } from "@/components/CaseSelector";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"newCase" | "specific">("newCase");
   const [isControlPanelOpen, setIsControlPanelOpen] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -50,6 +52,15 @@ const Index = () => {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/console")}
+                className="gap-2"
+              >
+                <Terminal className="h-4 w-4" />
+                Varma Console
+              </Button>
               <ThemeToggle />
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Officer ID: IO-2847</p>
