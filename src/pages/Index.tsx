@@ -59,7 +59,7 @@ const Index = () => {
                 className="gap-2"
               >
                 <Terminal className="h-4 w-4" />
-                Varma Console
+                Query Analysis
               </Button>
               <ThemeToggle />
               <div className="text-right">
