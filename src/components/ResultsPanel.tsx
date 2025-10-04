@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import NetworkGraph from "@/components/graph/NetworkGraph";
+import { shadowNetData } from "@/data/shadownet";
+import ClusterLegend from "@/components/graph/ClusterLegend";
+import TemporalSlider from "@/components/graph/TemporalSlider";
+import PathAnalysis from "@/components/graph/PathAnalysis";
+import { GraphData, NodeType } from "@/types/graph";
 
 interface ResultsPanelProps {
   mode: "newCase" | "specific";
@@ -13,6 +19,36 @@ interface ResultsPanelProps {
 
 export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProps) => {
   const [selectedEvidence, setSelectedEvidence] = useState<number | null>(null);
+  const [activeCluster, setActiveCluster] = useState<NodeType | null>(null);
+  const [timeFilter, setTimeFilter] = useState<Date | null>(null);
+  const [pathHighlight, setPathHighlight] = useState<{ source: string; target: string } | null>(null);
+
+  const graphData: GraphData = shadowNetData;
+
+  const dates = useMemo(() => {
+    const nodeDates = graphData.nodes.map(n => n.timestamp).filter(Boolean) as Date[];
+    const edgeDates = graphData.edges.map(e => e.timestamp).filter(Boolean) as Date[];
+    const all = [...nodeDates, ...edgeDates];
+    if (all.length === 0) return null;
+    return {
+      min: new Date(Math.min(...all.map(d => d.getTime()))),
+      max: new Date(Math.max(...all.map(d => d.getTime())))
+    };
+  }, [graphData]);
+
+  const clusterCounts = useMemo(() => {
+    const counts = {
+      person: 0,
+      phone: 0,
+      financial: 0,
+      location: 0,
+      keyword: 0,
+      organization: 0,
+    } as Record<NodeType, number>;
+    for (const n of graphData.nodes) counts[n.type]++;
+    return counts;
+  }, [graphData]);
+
   if (isAnalyzing) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -44,7 +80,7 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
     );
   }
 
-  // Mock results display
+  // Enhanced layout without overlap: controls live in a grid card above the graph
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -65,10 +101,30 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
       {mode === "newCase" ? (
         <div className="space-y-3">
           {[
-            { id: "2023-015", title: "Cybercrime - Data Breach", score: 87, type: "Shared Contacts" },
-            { id: "2023-092", title: "Narcotics Operation", score: 76, type: "Shared Media" },
-            { id: "2024-001", title: "Theft Investigation", score: 68, type: "Location Overlap" },
-            { id: "2022-045", title: "Murder Investigation", score: 54, type: "Shared Contacts" },
+            {
+              id: "2023-015",
+              title: "Cybercrime - Data Breach",
+              score: 87,
+              type: "Shared Contacts",
+            },
+            {
+              id: "2023-092",
+              title: "Narcotics Operation",
+              score: 76,
+              type: "Shared Media",
+            },
+            {
+              id: "2024-001",
+              title: "Theft Investigation",
+              score: 68,
+              type: "Location Overlap",
+            },
+            {
+              id: "2022-045",
+              title: "Murder Investigation",
+              score: 54,
+              type: "Shared Contacts",
+            },
           ].map((match) => (
             <div
               key={match.id}
@@ -103,27 +159,40 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
                 High Confidence Match
               </Badge>
             </div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-3 rounded-lg bg-success/10">
-                <div className="text-2xl font-bold text-success">14</div>
-                <div className="text-xs text-muted-foreground mt-1">Shared Contacts</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <ClusterLegend
+                  activeCluster={activeCluster}
+                  onClusterClick={setActiveCluster}
+                  clusterCounts={clusterCounts}
+                />
               </div>
-              <div className="p-3 rounded-lg bg-warning/10">
-                <div className="text-2xl font-bold text-warning">8</div>
-                <div className="text-xs text-muted-foreground mt-1">Media Matches</div>
-              </div>
-              <div className="p-3 rounded-lg bg-accent/10">
-                <div className="text-2xl font-bold text-accent">5</div>
-                <div className="text-xs text-muted-foreground mt-1">Location Overlaps</div>
+              <div className="md:col-span-2 space-y-4">
+                {dates && (
+                  <TemporalSlider
+                    minDate={dates.min}
+                    maxDate={dates.max}
+                    onDateChange={(d) => setTimeFilter(d)}
+                    activeConnections={graphData.edges.filter(e => !timeFilter || !e.timestamp || e.timestamp <= (timeFilter ?? dates.max)).length}
+                  />
+                )}
+                <PathAnalysis
+                  data={graphData}
+                  onPathRequest={(source, target) => setPathHighlight({ source, target })}
+                  onClearPath={() => setPathHighlight(null)}
+                />
               </div>
             </div>
           </div>
 
           <div className="border rounded-lg p-6 bg-card">
             <h3 className="text-lg font-semibold text-foreground mb-4">Network Visualization</h3>
-            <div className="h-64 bg-muted/30 rounded-lg flex items-center justify-center">
-              <p className="text-muted-foreground">Interactive network graph placeholder</p>
-            </div>
+            <NetworkGraph
+              data={graphData}
+              timeFilter={timeFilter ?? undefined}
+              activeCluster={activeCluster ?? undefined}
+              pathHighlight={pathHighlight ?? undefined}
+            />
           </div>
 
           <div className="border rounded-lg overflow-hidden bg-card">
@@ -132,9 +201,24 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
             </div>
             <div className="divide-y">
               {[
-                { type: "Shared Photo", source: "2024-001", target: "2023-015", value: "IMG_4521.jpg" },
-                { type: "Common Contact", source: "2024-001", target: "2023-015", value: "+1-555-0123" },
-                { type: "Location Overlap", source: "2024-001", target: "2023-015", value: "Downtown Plaza" },
+                {
+                  type: "Shared Photo",
+                  source: "2024-001",
+                  target: "2023-015",
+                  value: "IMG_4521.jpg",
+                },
+                {
+                  type: "Common Contact",
+                  source: "2024-001",
+                  target: "2023-015",
+                  value: "+1-555-0123",
+                },
+                {
+                  type: "Location Overlap",
+                  source: "2024-001",
+                  target: "2023-015",
+                  value: "Downtown Plaza",
+                },
               ].map((evidence, i) => (
                 <div key={i} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between">
