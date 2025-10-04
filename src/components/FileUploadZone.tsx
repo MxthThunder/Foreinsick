@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Upload, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface FileUploadZoneProps {
   onFileSelect: (file: File) => void;
@@ -11,6 +12,7 @@ interface FileUploadZoneProps {
 export const FileUploadZone = ({ onFileSelect, selectedFile }: FileUploadZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -21,20 +23,52 @@ export const FileUploadZone = ({ onFileSelect, selectedFile }: FileUploadZonePro
     setIsDragging(false);
   };
 
+  const validateFile = (file: File): boolean => {
+    return file.name.toLowerCase().endsWith('.ufdr');
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.ufdr')) {
-      onFileSelect(file);
+    if (file) {
+      if (validateFile(file)) {
+        onFileSelect(file);
+        toast({
+          title: "File uploaded successfully",
+          description: `${file.name} has been selected for analysis.`,
+        });
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a valid UFDR file. Only .ufdr files are allowed.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onFileSelect(file);
+      if (validateFile(file)) {
+        onFileSelect(file);
+        toast({
+          title: "File uploaded successfully",
+          description: `${file.name} has been selected for analysis.`,
+        });
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a valid UFDR file. Only .ufdr files are allowed.",
+          variant: "destructive",
+        });
+        // Clear the input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     }
   };
 
@@ -77,7 +111,7 @@ export const FileUploadZone = ({ onFileSelect, selectedFile }: FileUploadZonePro
             <Upload className="h-12 w-12 text-muted-foreground" />
             <div>
               <p className="font-medium text-foreground">Drop your UFDR file here</p>
-              <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+              <p className="text-sm text-muted-foreground mt-1">or click to browse (only .ufdr files accepted)</p>
             </div>
             <Button variant="outline" size="sm" className="mt-2">
               Browse Files
