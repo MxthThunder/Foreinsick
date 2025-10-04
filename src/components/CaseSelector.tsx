@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
 
 interface CaseSelectorProps {
   selectedCases: string[];
@@ -12,15 +13,6 @@ interface CaseSelectorProps {
   linkageCriteria: string[];
   onCriteriaChange: (criteria: string[]) => void;
 }
-
-// Mock data for demonstration
-const availableCases = [
-  { id: "2024-001", title: "Theft Investigation - Downtown" },
-  { id: "2024-007", title: "Fraud Case - Financial District" },
-  { id: "2023-015", title: "Cybercrime - Data Breach" },
-  { id: "2023-092", title: "Narcotics Operation - Harbor" },
-  { id: "2022-045", title: "Murder Investigation - Residential" },
-];
 
 const criteriaOptions = [
   { id: "contacts", label: "Shared Contacts" },
@@ -36,6 +28,27 @@ export const CaseSelector = ({
   onCriteriaChange,
 }: CaseSelectorProps) => {
   const [selectSlots, setSelectSlots] = useState<number[]>([0, 1]);
+  const [availableCases, setAvailableCases] = useState<Array<{ id: string; title: string }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch cases from API on component mount
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setIsLoading(true);
+        const cases = await api.getCases();
+        setAvailableCases(cases.map((c: any) => ({ id: c.id, title: c.title })));
+      } catch (error) {
+        console.error('Failed to fetch cases:', error);
+        // Fallback to empty array on error
+        setAvailableCases([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, []);
 
   const handleAddCase = () => {
     setSelectSlots([...selectSlots, selectSlots.length]);
@@ -72,7 +85,11 @@ export const CaseSelector = ({
           Select Cases for Direct Comparison
         </h3>
         
-        {selectSlots.map((slot, index) => (
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Loading cases...</div>
+        ) : (
+          <>
+            {selectSlots.map((slot, index) => (
           <div key={slot} className="flex items-center gap-2">
             <Select
               value={selectedCases[index] || ""}
@@ -125,6 +142,8 @@ export const CaseSelector = ({
           <Plus className="h-4 w-4 mr-2" />
           Add Another Case
         </Button>
+          </>
+        )}
       </div>
 
       <div className="space-y-3 pt-4 border-t">

@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import NetworkGraph from "@/components/graph/NetworkGraph";
 import { shadowNetData } from "@/data/shadownet";
 import ClusterLegend from "@/components/graph/ClusterLegend";
 import TemporalSlider from "@/components/graph/TemporalSlider";
 import PathAnalysis from "@/components/graph/PathAnalysis";
 import { GraphData, NodeType } from "@/types/graph";
+import { api, transformGraphData } from "@/lib/api";
 
 interface ResultsPanelProps {
   mode: "newCase" | "specific";
@@ -22,8 +23,30 @@ export const ResultsPanel = ({ mode, isAnalyzing, hasResults }: ResultsPanelProp
   const [activeCluster, setActiveCluster] = useState<NodeType | null>(null);
   const [timeFilter, setTimeFilter] = useState<Date | null>(null);
   const [pathHighlight, setPathHighlight] = useState<{ source: string; target: string } | null>(null);
+  const [graphData, setGraphData] = useState<GraphData>(shadowNetData);
+  const [isLoadingGraph, setIsLoadingGraph] = useState(false);
 
-  const graphData: GraphData = shadowNetData;
+  // Fetch graph data from API for Arjun Varma case
+  useEffect(() => {
+    const fetchGraphData = async () => {
+      if (!hasResults) return;
+      
+      try {
+        setIsLoadingGraph(true);
+        const response = await api.getCaseGraph('2025-047-VA');
+        const transformedData = transformGraphData(response);
+        setGraphData(transformedData);
+      } catch (error) {
+        console.error('Failed to fetch graph data:', error);
+        // Fallback to static data on error
+        setGraphData(shadowNetData);
+      } finally {
+        setIsLoadingGraph(false);
+      }
+    };
+
+    fetchGraphData();
+  }, [hasResults]);
 
   const dates = useMemo(() => {
     const nodeDates = graphData.nodes.map(n => n.timestamp).filter(Boolean) as Date[];

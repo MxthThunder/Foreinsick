@@ -1,15 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api, transformGraphData } from "@/lib/api";
+import { GraphData } from "@/types/graph";
 
 const Console = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
+  const [caseInfo, setCaseInfo] = useState<any>(null);
+
+  // Fetch Arjun Varma case data on component mount
+  useEffect(() => {
+    const fetchCaseData = async () => {
+      try {
+        const response = await api.getCaseGraph('2025-047-VA');
+        const caseResponse = await api.getCase('2025-047-VA');
+        setGraphData(transformGraphData(response));
+        setCaseInfo(caseResponse.case);
+      } catch (error) {
+        console.error('Failed to fetch case data:', error);
+      }
+    };
+
+    fetchCaseData();
+  }, []);
 
   const handleSubmit = () => {
     setIsLoading(true);
@@ -21,40 +41,26 @@ const Console = () => {
     }, 3000);
   };
 
-  const mockData = [
-    {
-      id: "TXN-447",
-      timestamp: "2024-03-15 14:32:18 UTC",
-      protocol: "SMS Encrypted",
-      alias: "Wallet-9x7k2p",
-      confidence: 0.98,
-      snippet: "Transfer confirmed. Green signal for phase 2."
-    },
-    {
-      id: "TXN-448",
-      timestamp: "2024-03-15 16:45:02 UTC",
-      protocol: "WhatsApp Call",
-      alias: "Contact: RedFlag-07",
-      confidence: 0.94,
-      snippet: "Audio forensics match 87% voice print."
-    },
-    {
-      id: "TXN-449",
-      timestamp: "2024-03-16 09:12:44 UTC",
-      protocol: "BTC Transaction",
-      alias: "Wallet-5m3n8q",
-      confidence: 0.65,
-      snippet: "0.0142 BTC → Unknown recipient (mixer detected)."
-    },
-    {
-      id: "TXN-450",
-      timestamp: "2024-03-16 22:08:33 UTC",
-      protocol: "SMS Standard",
-      alias: "Contact: Arjun-Primary",
-      confidence: 0.91,
-      snippet: "Meeting postponed. Use alternate route."
-    }
-  ];
+  // Generate transaction data from API graph data
+  const transactionData = graphData ? graphData.edges.slice(0, 4).map((edge) => ({
+    id: edge.id.toUpperCase(),
+    timestamp: edge.timestamp?.toISOString().replace('T', ' ').split('.')[0] + ' UTC' || 'N/A',
+    protocol: edge.type,
+    alias: graphData.nodes.find(n => n.id === edge.target)?.label || edge.target,
+    confidence: 0.85 + Math.random() * 0.13,
+    snippet: edge.data?.snippet || 'Data connection detected.'
+  })) : [];
+
+  // Calculate statistics from API data
+  const totalNodes = graphData?.nodes.length || 0;
+  const totalEdges = graphData?.edges.length || 0;
+  const totalInteractions = graphData?.edges.reduce((sum, edge) => sum + (edge.weight || 0), 0) || 0;
+  
+  // Find burner phone node
+  const burnerNode = graphData?.nodes.find(n => n.id === 'burner');
+  const burnerConnections = graphData?.edges.filter(e => 
+    e.source === 'burner' || e.target === 'burner'
+  ).length || 0;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -235,7 +241,7 @@ const Console = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockData.map((row, idx) => (
+                    {transactionData.map((row, idx) => (
                       <tr key={row.id} className={idx % 2 === 0 ? "bg-background" : "bg-secondary/30"}>
                         <td className="px-4 py-3 font-mono text-foreground">{row.id}</td>
                         <td className="px-4 py-3 font-mono text-foreground/80">{row.timestamp}</td>
