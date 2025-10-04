@@ -4,7 +4,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { shadowNetData } from "@/data/shadownet";
 
 const Console = () => {
   const navigate = useNavigate();
@@ -22,26 +21,40 @@ const Console = () => {
     }, 3000);
   };
 
-  // Generate transaction data from actual shadownet edges
-  const transactionData = shadowNetData.edges.slice(0, 4).map((edge, idx) => ({
-    id: edge.id.toUpperCase(),
-    timestamp: edge.timestamp?.toISOString().replace('T', ' ').split('.')[0] + ' UTC' || 'N/A',
-    protocol: edge.type,
-    alias: shadowNetData.nodes.find(n => n.id === edge.target)?.label || edge.target,
-    confidence: 0.85 + Math.random() * 0.13, // Random confidence between 0.85-0.98
-    snippet: edge.data?.snippet || 'Data connection detected.'
-  }));
-
-  // Calculate actual statistics from shadownet data
-  const totalNodes = shadowNetData.nodes.length;
-  const totalEdges = shadowNetData.edges.length;
-  const totalInteractions = shadowNetData.edges.reduce((sum, edge) => sum + (edge.weight || 0), 0);
-  
-  // Find burner phone node
-  const burnerNode = shadowNetData.nodes.find(n => n.id === 'burner');
-  const burnerConnections = shadowNetData.edges.filter(e => 
-    e.source === 'burner' || e.target === 'burner'
-  ).length;
+  const mockData = [
+    {
+      id: "TXN-447",
+      timestamp: "2024-03-15 14:32:18 UTC",
+      protocol: "SMS Encrypted",
+      alias: "Wallet-9x7k2p",
+      confidence: 0.98,
+      snippet: "Transfer confirmed. Green signal for phase 2."
+    },
+    {
+      id: "TXN-448",
+      timestamp: "2024-03-15 16:45:02 UTC",
+      protocol: "WhatsApp Call",
+      alias: "Contact: RedFlag-07",
+      confidence: 0.94,
+      snippet: "Audio forensics match 87% voice print."
+    },
+    {
+      id: "TXN-449",
+      timestamp: "2024-03-16 09:12:44 UTC",
+      protocol: "BTC Transaction",
+      alias: "Wallet-5m3n8q",
+      confidence: 0.65,
+      snippet: "0.0142 BTC → Unknown recipient (mixer detected)."
+    },
+    {
+      id: "TXN-450",
+      timestamp: "2024-03-16 22:08:33 UTC",
+      protocol: "SMS Standard",
+      alias: "Contact: Arjun-Primary",
+      confidence: 0.91,
+      snippet: "Meeting postponed. Use alternate route."
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -74,7 +87,7 @@ const Console = () => {
             </h2>
             <div className="space-y-1 text-sm text-foreground/80 font-mono">
               <p>Target File Loaded: <span className="text-primary font-semibold">Arjun-Phone-Seizure-1.UFDR</span></p>
-              <p>Records Indexed: <span className="font-semibold">{totalInteractions.toLocaleString()}</span></p>
+              <p>Records Indexed: <span className="font-semibold">12,728</span></p>
               <p>Engine Status: <span className="text-success font-semibold">Optimal (Graph Ready)</span></p>
             </div>
           </div>
@@ -141,8 +154,8 @@ const Console = () => {
             {/* Metadata */}
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div className="p-3 bg-secondary rounded">
-                <p className="text-foreground/60 text-xs uppercase">Total Connections</p>
-                <p className="text-2xl font-bold text-foreground">{burnerConnections}</p>
+                <p className="text-foreground/60 text-xs uppercase">Total Matches</p>
+                <p className="text-2xl font-bold text-foreground">1</p>
               </div>
               <div className="p-3 bg-secondary rounded">
                 <p className="text-foreground/60 text-xs uppercase">Path Confidence</p>
@@ -161,7 +174,7 @@ const Console = () => {
                 Critical Path Revelation
               </h3>
               <p className="text-foreground leading-relaxed">
-                <strong>Key Finding:</strong> The shortest path between the Financial Network and Operations Network is the <span className="font-mono text-primary font-semibold">{burnerNode?.label || 'Burner Phone'} ({burnerNode?.metadata?.imei || '+91-888...'})</span>. This node is the bridge of the conspiracy with {burnerConnections} direct connections.
+                <strong>Key Finding:</strong> The shortest path between the Financial Network and Operations Network is the <span className="font-mono text-primary font-semibold">Burner Phone (+91-888...)</span>. This node is the bridge of the conspiracy.
               </p>
             </div>
 
@@ -207,7 +220,7 @@ const Console = () => {
             {/* Data Table */}
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                Burner Phone Transaction & Contact Log ({totalNodes} nodes, {totalEdges} edges)
+                Burner Phone Transaction & Contact Log
               </h3>
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
@@ -222,7 +235,7 @@ const Console = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactionData.map((row, idx) => (
+                    {mockData.map((row, idx) => (
                       <tr key={row.id} className={idx % 2 === 0 ? "bg-background" : "bg-secondary/30"}>
                         <td className="px-4 py-3 font-mono text-foreground">{row.id}</td>
                         <td className="px-4 py-3 font-mono text-foreground/80">{row.timestamp}</td>
